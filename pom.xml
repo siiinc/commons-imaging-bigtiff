@@ -24,7 +24,7 @@
   <!-- ====================================================================== -->
 
   <groupId>org.apache.commons</groupId>
-  <artifactId>commons-imaging-bigtiff-rda</artifactId>
+  <artifactId>commons-imaging-bigtiff</artifactId>
   <name>Apache Commons Imaging</name>
   <version>1.1-SNAPSHOT</version>
 
