@@ -59,11 +59,22 @@ public final class TiffOutputSet {
     protected List<TiffOutputItem> getOutputItems(
             final TiffOutputSummary outputSummary) throws ImageWriteException {
         final List<TiffOutputItem> result = new ArrayList<>();
-
+        final List<TiffOutputItem> header = new ArrayList<>();
+        final List<TiffOutputItem> data = new ArrayList<>();
         for (final TiffOutputDirectory directory : directories) {
-            result.addAll(directory.getOutputItems(outputSummary));
-        }
+            List<TiffOutputItem> items = directory.getOutputItems(outputSummary);
+            for(TiffOutputItem item: items)
+            {
+                String description = item.getItemDescription();
+                if(description.equalsIgnoreCase("TIFF image data"))
+                    data.add(item);
+                else
+                    header.add(item);
+            }
 
+        }
+        result.addAll(header);
+        result.addAll(data);
         return result;
     }
 

@@ -21,6 +21,7 @@ import org.apache.commons.imaging.FormatCompliance;
 import org.apache.commons.imaging.ImagingTestConstants;
 import org.apache.commons.imaging.common.bytesource.ByteSourceArray;
 import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
+import org.apache.commons.imaging.formats.tiff.constants.TiffDirectoryConstants;
 import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
 import org.apache.commons.imaging.formats.tiff.write.TiffImageWriterLossy;
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputDirectory;
@@ -71,31 +72,109 @@ public class BigTiffTest {
         short tileWidth = 32;
         short tileHeight = 32;
         short samplesPerPixel = 3;
-        short[] bitsPerSample = new short[samplesPerPixel];
+
         short sampleBits = (short)8;
-        Arrays.fill(bitsPerSample, sampleBits);
 
         TiffOutputSet set;
         //set = new TiffOutputSet(TiffConstants.DEFAULT_TIFF_BYTE_ORDER, TiffConstants.TIFF_CLASSIC);
         set = new TiffOutputSet(TiffConstants.DEFAULT_TIFF_BYTE_ORDER, TiffConstants.TIFF_BIGTIFF);
         final TiffOutputDirectory dir = set.getOrCreateRootDirectory();
+        makeImage(dir, width, height, tileWidth, tileHeight, sampleBits, samplesPerPixel);
+
+        final TiffImageWriterLossy writer = new TiffImageWriterLossy();
+        final ByteArrayOutputStream tiff = new ByteArrayOutputStream();
+        writer.write(tiff, set, false);
+        byte[] data = tiff.toByteArray();
+
+        //todo: remove this
+//        OutputStream os = new FileOutputStream(new File("/tmp/java_ref.tif"));
+//        os.write(data);
+//        os.close();
+
+
+
+    }
+
+
+    @Test
+    public void testBigTiffPyramidaWrite() throws Exception{
+
+        int width = 256;
+        int height = 256;
+        short tileWidth = 32;
+        short tileHeight = 32;
+        short samplesPerPixel = 3;
+        short sampleBits = (short)8;
+
+        int tiffType = TiffConstants.TIFF_BIGTIFF;
+
+        TiffOutputSet set;
+        //set = new TiffOutputSet(TiffConstants.DEFAULT_TIFF_BYTE_ORDER, TiffConstants.TIFF_CLASSIC);
+        set = new TiffOutputSet(TiffConstants.DEFAULT_TIFF_BYTE_ORDER, tiffType);
+        final TiffOutputDirectory dir = set.getOrCreateRootDirectory();
+        makeImage(dir, width, height, tileWidth, tileHeight, sampleBits, samplesPerPixel);
+
+        for (int sub = 1; sub <= 3; sub++)
+        {
+            int pWidth = ((Double)Math.ceil((double)width/((double)sub*2.0))).intValue();
+            int pHeight = ((Double)Math.ceil((double)height/((double)sub*2.0))).intValue();
+            //sub dirs start from ROOT which is 0
+            TiffOutputDirectory pyramid = new TiffOutputDirectory(TiffDirectoryConstants.DIRECTORY_TYPE_ROOT+sub, tiffType, TiffConstants.DEFAULT_TIFF_BYTE_ORDER);
+            makeImage(pyramid, pWidth, pHeight, tileWidth, tileHeight, sampleBits, samplesPerPixel);
+            set.addDirectory(pyramid);
+        }
+
+
+        final TiffImageWriterLossy writer = new TiffImageWriterLossy();
+        final ByteArrayOutputStream tiff = new ByteArrayOutputStream();
+        writer.write(tiff, set, false);
+        byte[] data = tiff.toByteArray();
+
+        //todo: remove this
+        OutputStream os = new FileOutputStream(new File("/tmp/java_ref_multi.tif"));
+        os.write(data);
+        os.close();
+
+
+
+    }
+
+
+    private void makeImage(TiffOutputDirectory dir, int imageWidth, int imageHeight, short tileWidth, short tileHeight, short sampleBits, short samplesPerPixel) throws Exception
+    {
+
         String tst = "Maxar Inc. " + LocalDate.now().getYear();
         dir.add(TiffTagConstants.TIFF_TAG_COPYRIGHT, tst);
-        dir.add(TiffTagConstants.TIFF_TAG_IMAGE_WIDTH, width);
-        dir.add(TiffTagConstants.TIFF_TAG_IMAGE_LENGTH, height);
+        dir.add(TiffTagConstants.TIFF_TAG_IMAGE_WIDTH, imageWidth);
+        dir.add(TiffTagConstants.TIFF_TAG_IMAGE_LENGTH, imageHeight);
         dir.add(TiffTagConstants.TIFF_TAG_TILE_WIDTH, tileWidth);
         dir.add(TiffTagConstants.TIFF_TAG_TILE_LENGTH, tileHeight);
+
+        short[] bitsPerSample = new short[samplesPerPixel];
+        Arrays.fill(bitsPerSample, sampleBits);
+
+        short[] extraSamples = null;
+        if(samplesPerPixel > 1)
+        {
+            extraSamples = new short[samplesPerPixel-1];
+            Arrays.fill(extraSamples, (short)0);
+        }
+
         dir.add(TiffTagConstants.TIFF_TAG_BITS_PER_SAMPLE, bitsPerSample);
         dir.add(TiffTagConstants.TIFF_TAG_SAMPLES_PER_PIXEL, samplesPerPixel);
+        if(extraSamples != null)
+        {
+            dir.add(TiffTagConstants.TIFF_TAG_EXTRA_SAMPLES, extraSamples);
+        }
         dir.add(TiffTagConstants.TIFF_TAG_PHOTOMETRIC_INTERPRETATION, (short) TiffTagConstants.PHOTOMETRIC_INTERPRETATION_VALUE_BLACK_IS_ZERO);
 
         List<TiffImageData.Data> tiles = new ArrayList<>();
         long tileOffset = 0;
         long tileSize = tileWidth*tileHeight*sampleBits*samplesPerPixel/8;
         byte[] commonDummy = new byte[(int)tileSize];
-        for(long ty = 0; ty < Math.ceil((double)height/(double)tileHeight); ty++)
+        for(long ty = 0; ty < Math.ceil((double)imageHeight/(double)tileHeight); ty++)
         {
-            for(long tx = 0; tx < Math.ceil((double)width/(double)tileWidth); tx++)
+            for(long tx = 0; tx < Math.ceil((double)imageWidth/(double)tileWidth); tx++)
             {
                 TiffImageData.Data de = new TiffImageData.Data(tileOffset, (int)tileSize, commonDummy);
                 tiles.add(de);
@@ -112,18 +191,5 @@ public class BigTiffTest {
         TiffImageData tiffImageData = new TiffImageData.Tiles(tdes, tileWidth, tileHeight);
 
         dir.setTiffImageData(tiffImageData);
-
-        final TiffImageWriterLossy writer = new TiffImageWriterLossy();
-        final ByteArrayOutputStream tiff = new ByteArrayOutputStream();
-        writer.write(tiff, set, false);
-        byte[] data = tiff.toByteArray();
-
-        //todo: remove this
-        OutputStream os = new FileOutputStream(new File("/tmp/java_ref.tif"));
-        os.write(data);
-        os.close();
-
-
-
     }
 }
