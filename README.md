@@ -52,4 +52,4 @@ See the `NOTICE.txt` file for required notices and attributions.
 
 
 
-`deploy-artifact -p org/apache/commons -a commons-imaging-bigtiff -v 1.1-SNAPSHOT`
+`deploy-artifact -p com/maxar/rda -a commons-imaging-bigtiff -v 1.3.3-SNAPSHOT`
