@@ -158,7 +158,7 @@ public class TiffReader extends BinaryFileParser
 
             for (int i = 0; i < entryCount; i++) {
                 final int tag;
-                final int type;
+                int type;
                 final long count;
                 final byte[] offsetBytes;
                 if(tiffVersion == TiffConstants.TIFF_CLASSIC)
@@ -186,6 +186,13 @@ public class TiffReader extends BinaryFileParser
                     // lengths,
                     // which can cause OOM problems.
                     continue;
+                }
+                //this is a hack to change the type to long if it needs to
+                if(tiffVersion == TiffConstants.TIFF_BIGTIFF && (tag == 256 || tag ==257) && type == 3)
+                {
+                    short test = ((Long)offset).shortValue();
+                    if (test != offset)type = 4;
+
                 }
 
                 final FieldType fieldType;

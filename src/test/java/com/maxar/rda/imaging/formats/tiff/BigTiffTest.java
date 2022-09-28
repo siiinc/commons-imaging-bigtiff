@@ -26,6 +26,7 @@ import com.maxar.rda.imaging.common.bytesource.ByteSourceArray;
 import com.maxar.rda.imaging.formats.tiff.write.TiffImageWriterLossy;
 import com.maxar.rda.imaging.formats.tiff.write.TiffOutputDirectory;
 import com.maxar.rda.imaging.formats.tiff.write.TiffOutputSet;
+import javax.lang.model.type.UnknownTypeException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.Test;
@@ -46,6 +47,12 @@ public class BigTiffTest {
     private final String TIFF_IMAGE_FILE3 = "tiff\\9\\BigTIFFLong8.tif";
     private final String TIFF_IMAGE_FILE4 = "tiff\\9\\BigTIFFLong8Tiles.tif";
 
+    private final String TIFF_IMAGE_FILE5 = "tiff\\9\\small_ms_header.tif";
+
+    private final String TIFF_IMAGE_FILE6 = "tiff\\9\\typical_ms_header.tif";
+
+    private final String TIFF_IMAGE_FILE7 = "tiff\\9\\superbig_pan_header.tif";
+
     @Test
     public void testBigTiffRead() throws Exception{
 
@@ -61,6 +68,32 @@ public class BigTiffTest {
             final TiffDirectory rootDir = contents.directories.get(0);
             int ii = 0;
         }
+    }
+
+    @Test
+    public void testBigTiffReadHeaders() throws Exception{
+
+        for (String image: Arrays.asList(TIFF_IMAGE_FILE5, TIFF_IMAGE_FILE6, TIFF_IMAGE_FILE7))
+        {
+            final String imagePath = FilenameUtils.separatorsToSystem(image);
+            final File imageFile = new File(ImagingTestConstants.TEST_IMAGE_FOLDER, imagePath);
+            final byte imageFileBytes[] = FileUtils.readFileToByteArray(imageFile);
+            final TiffReader reader = new TiffReader(true);
+            final Map<String, Object> params = new TreeMap<>();
+            final FormatCompliance formatCompliance = new FormatCompliance("");
+            TiffContents contents = reader.readFirstDirectory(new ByteSourceArray(imageFileBytes), params, false, formatCompliance);
+            final TiffDirectory rootDir = contents.directories.get(0);
+            long width = castObjectToLong(rootDir.getFieldValue(TiffTagConstants.TIFF_TAG_IMAGE_WIDTH));
+            long height = castObjectToLong(rootDir.getFieldValue(TiffTagConstants.TIFF_TAG_IMAGE_LENGTH));
+            int ii = 0;
+        }
+    }
+
+    public long castObjectToLong(Object value)
+    {
+        if(value instanceof Number val)
+            return val.longValue();
+        throw new UnknownTypeException(null, value);
     }
 
 
