@@ -53,6 +53,8 @@ public class BigTiffTest {
 
     private final String TIFF_IMAGE_FILE7 = "tiff\\9\\superbig_pan_header.tif";
 
+    private final String TIFF_IMAGE_FILE8 = "tiff\\9\\peru_lobarnchea_cog.tif";
+
     @Test
     public void testBigTiffRead() throws Exception{
 
@@ -88,6 +90,27 @@ public class BigTiffTest {
             int ii = 0;
         }
     }
+
+
+    @Test
+    public void testBigTiffReadDirectories() throws Exception{
+
+        for (String image: Arrays.asList(TIFF_IMAGE_FILE8))
+        {
+            final String imagePath = FilenameUtils.separatorsToSystem(image);
+            final File imageFile = new File(ImagingTestConstants.TEST_IMAGE_FOLDER, imagePath);
+            final byte imageFileBytes[] = FileUtils.readFileToByteArray(imageFile);
+            final TiffReader reader = new TiffReader(true);
+            final Map<String, Object> params = new TreeMap<>();
+            final FormatCompliance formatCompliance = new FormatCompliance("");
+            TiffContents contents = reader.readDirectories(new ByteSourceArray(imageFileBytes), false, formatCompliance);
+            final TiffDirectory rootDir = contents.directories.get(0);
+            long width = castObjectToLong(rootDir.getFieldValue(TiffTagConstants.TIFF_TAG_IMAGE_WIDTH));
+            long height = castObjectToLong(rootDir.getFieldValue(TiffTagConstants.TIFF_TAG_IMAGE_LENGTH));
+            int ii = 0;
+        }
+    }
+
 
     public long castObjectToLong(Object value)
     {
