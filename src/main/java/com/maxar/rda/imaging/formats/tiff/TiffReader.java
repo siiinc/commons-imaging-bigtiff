@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -177,7 +178,6 @@ public class TiffReader extends BinaryFileParser
                 }
 
 
-
                 final long offset = 0xFFFFffffL & ByteConversions.toInt(offsetBytes, getByteOrder());
 
                 if (tag == 0) {
@@ -188,11 +188,22 @@ public class TiffReader extends BinaryFileParser
                     continue;
                 }
                 //this is a hack to change the type to long if it needs to
-                if(tiffVersion == TiffConstants.TIFF_BIGTIFF && (tag == 256 || tag ==257) && type == 3)
+                if((tag == 256 || tag ==257) && type == 3)
                 {
                     short test = ((Long)offset).shortValue();
-                    if (test != offset)type = 4;
-
+                    if (test != offset)
+                    {
+                        //var b4 = offsetBytes;
+                        var b2 = Arrays.copyOfRange(offsetBytes, 0,2);
+                        var val2 = ByteConversions.toShort(b2, getByteOrder());
+                        if(val2 <= 0)
+                        {
+                            type = 4;
+                        }
+                        //var val4 = ByteConversions.toInt(b4, getByteOrder());
+                        //int xxx = 0;
+                        //type = 4;
+                    }
                 }
 
                 final FieldType fieldType;
