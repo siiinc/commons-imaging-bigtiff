@@ -50,6 +50,6 @@ This code is under the [Apache Licence v2](https://www.apache.org/licenses/LICEN
 
 See the `NOTICE.txt` file for required notices and attributions.
 
-
+Working branch is w_pyramids
 
 `deploy-artifact -p com/maxar/rda -a commons-imaging-bigtiff -v 1.3.3-SNAPSHOT`
